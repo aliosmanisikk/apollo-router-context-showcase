@@ -1,0 +1,13 @@
+subgraphs:
+  subgraph-a:
+    routing_url: http://localhost:3001/graphql/
+    schema:
+      subgraph_url: http://localhost:3001/graphql/
+  subgraph-b:
+    routing_url: http://localhost:3002/graphql/
+    schema:
+      subgraph_url: http://localhost:3002/graphql/
+  subgraph-c:
+    routing_url: http://localhost:3003/graphql/
+    schema:
+      subgraph_url: http://localhost:3003/graphql/
