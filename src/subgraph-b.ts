@@ -3,27 +3,62 @@ import { run } from './common';
 
 // The GraphQL schema
 const typeDefs = gql`
-  extend schema
-    @link(
-      url: "https://specs.apollo.dev/federation/v2.11"
-      import: ["@key", "@shareable", "@interfaceObject", "@requiresScopes", "@policy", "@external", "@provides"]
-    )
+  extend schema @link(url: "https://specs.apollo.dev/federation/v2.11", import: ["@key", "@shareable"])
 
-  type Media @key(fields: "id", resolvable: false) @interfaceObject {
+  type Cart @key(fields: "id") @shareable {
     id: ID!
+    deliveryMethod: String!
+    lineItems: [LineItem!]!
+  }
+
+  type LineItem @key(fields: "id") {
+    id: ID!
+    productType: String!
+    quantity: Int!
   }
 
   extend type Query {
-    medias: [Media!]!
-    media(id: String!): Media!
+    currentCart: Cart!
   }
 `;
 
 // A map of functions which return data for the schema.
 const resolvers = {
   Query: {
-    medias: () => [{ id: '1' }, { id: '2' }, { id: '3' }],
-    media: (_: unknown, { id }: { id: string }) => ({ id }),
+    currentCart: () => ({
+      id: '1',
+      deliveryMethod: 'home-delivery',
+      lineItems: [
+        { id: '1', productType: 'Sunglass', quantity: 2 },
+        { id: '2', productType: 'Frame', quantity: 1 },
+      ],
+    }),
+  },
+  Cart: {
+    __resolveReference: (cart: { id: string }) => {
+      if (cart.id === 'old') {
+        return {
+          id: cart.id,
+          deliveryMethod: 'pick-up',
+          lineItems: [{ id: '1', productType: 'Product old', quantity: 1 }],
+        };
+      }
+      return {
+        id: cart.id,
+        deliveryMethod: 'home-delivery',
+        lineItems: [
+          { id: '1', productType: 'Product 1', quantity: 2 },
+          { id: '2', productType: 'Product 2', quantity: 1 },
+        ],
+      };
+    },
+  },
+  LineItem: {
+    __resolveReference: (lineItem: { id: string }) => ({
+      id: lineItem.id,
+      productType: `Product ${lineItem.id}`,
+      quantity: lineItem.id === '1' ? 2 : 1,
+    }),
   },
 };
 

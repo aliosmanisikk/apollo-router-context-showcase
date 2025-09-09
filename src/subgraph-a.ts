@@ -3,69 +3,38 @@ import { isDefined, run } from './common';
 
 // The GraphQL schema
 const typeDefs = gql`
-  extend schema @link(url: "https://specs.apollo.dev/federation/v2.11", import: ["@key"])
+  extend schema
+    @link(url: "https://specs.apollo.dev/federation/v2.11", import: ["@key", "@context", "@fromContext", "@external", "@shareable"])
 
-  type BookDetails {
-    numberOfPages: Int!
-  }
-
-  type AlbumDetails {
-    numberOfSongs: Int!
-  }
-
-  type MagazineDetails {
-    numberOfSections: Int!
-  }
-
-  union MediaDetails = BookDetails | AlbumDetails | MagazineDetails
-
-  interface Media @key(fields: "id") {
+  type Cart @key(fields: "id", resolvable: false) @context(name: "cartContext") @shareable {
     id: ID!
-    typeDetails: MediaDetails
+    deliveryMethod: String! @external
   }
 
-  type Book implements Media @key(fields: "id") {
+  type LineItem @key(fields: "id") {
     id: ID!
-    title: String
-    typeDetails: BookDetails
+    deliveryEstimation(deliveryMethod: String @fromContext(field: "$cartContext { deliveryMethod }")): Int!
   }
 
-  type Album implements Media @key(fields: "id") {
-    id: ID!
-    title: String
-    typeDetails: AlbumDetails
-  }
-
-  type Magazine implements Media @key(fields: "id") {
-    id: ID!
-    title: String
-    typeDetails: MagazineDetails
+  extend type Query {
+    oldCart: Cart!
   }
 `;
 
 // A map of functions which return data for the schema.
 const resolvers = {
-  Media: {
-    __resolveType: async (media: { typeDetails: { numberOfPages?: number; numberOfSongs?: number; numberOfSections?: number } }) => {
-      if (isDefined(media.typeDetails.numberOfPages)) {
-        return 'Book';
-      } else if (isDefined(media.typeDetails.numberOfSongs)) {
-        return 'Album';
-      } else if (isDefined(media.typeDetails.numberOfSections)) {
-        return 'Magazine';
+  LineItem: {
+    deliveryEstimation: (_: unknown, { deliveryMethod }: { deliveryMethod: string }) => {
+      if (deliveryMethod === 'home-delivery') {
+        return 2;
       }
-      return null;
+      return 5;
     },
-
-    __resolveReference: async ({ id }: { id: string }) => {
-      if (id === '1') {
-        return { id, title: 'Lord of the rings', typeDetails: { __typename: 'BookDetails', numberOfPages: 555 } };
-      } else if (id === '2') {
-        return { id, title: 'Thriller', typeDetails: { __typename: 'AlbumDetails', numberOfSongs: 9 } };
-      }
-
-      return { id, title: 'Ok', typeDetails: { __typename: 'MagazineDetails', numberOfSections: 5 } };
-    },
+  },
+  Query: {
+    oldCart: () => ({
+      id: 'old',
+    }),
   },
 };
 
