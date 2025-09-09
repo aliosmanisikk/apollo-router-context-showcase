@@ -15,10 +15,6 @@ const typeDefs = gql`
     id: ID!
     deliveryEstimation(deliveryMethod: String @fromContext(field: "$cartContext { deliveryMethod }")): Int!
   }
-
-  extend type Query {
-    oldCart: Cart!
-  }
 `;
 
 // A map of functions which return data for the schema.
@@ -30,11 +26,6 @@ const resolvers = {
       }
       return 5;
     },
-  },
-  Query: {
-    oldCart: () => ({
-      id: 'old',
-    }),
   },
 };
 
